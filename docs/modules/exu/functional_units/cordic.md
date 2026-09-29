@@ -39,7 +39,7 @@ This module is a fixed-point CORDIC engine enabling support for division, cosine
 
 | Type          | Description                           |
 |---------------|---------------------------------------|
-| [`fu_if.server`](../tinytracer_if.md#fu_if)  | Micro-op request and response channel from FU Control |
+| [`fu_if.server`](../../tinytracer_if.md#fu_if)  | Micro-op request and response channel from FU Control |
 
 ## Architecture Overview
 

@@ -58,7 +58,7 @@ Valid/ready stream carrying one RGB colour. Carries sample colours from the RTU 
 
 ## `macro_if`
 
-RTU to Decode Unit channel. The RTU sends a macro-op request and the Decode Unit responds with a vector result. See [Instruction Encoding](../encoding/instruction.md) for the macro-op format.
+RTU to Execution Unit channel. The RTU sends a macro-op request and the EXU responds with a vector result. The EXU passes the channel through to the Decode Unit, so both use the `server` modport. See [Instruction Encoding](../encoding/instruction.md) for the macro-op format.
 
 ### Signals
 
@@ -66,7 +66,7 @@ RTU to Decode Unit channel. The RTU sends a macro-op request and the Decode Unit
 |---------------|:------------:|:------------:|---------------------------------------|
 | `req_valid`  |     1      | output | Macro-op request is valid |
 | `req_op`  |     `macro_word_t`      | output | Macro-op (`MACRO_W` bits) |
-| `req_ready`  |     1      | input | Decode Unit can accept a macro-op |
+| `req_ready`  |     1      | input | EXU can accept a macro-op |
 | `resp_valid`  |     1      | input | Macro-op result is valid |
 | `resp_result`  |     `vec3_t`      | input | Macro-op result (scalar results in `x`) |
 | `resp_ready`  |     1      | output | Client can accept the result |
@@ -76,7 +76,7 @@ RTU to Decode Unit channel. The RTU sends a macro-op request and the Decode Unit
 | Modport          | Used by                           |
 |---------------|---------------------------------------|
 | `client`  | [`rtu`](rtu/rtu.md), [`ray_generator`](rtu/ray_gen/ray_generator.md), [`intersection_unit`](rtu/intersection_unit.md), [`shader_core`](rtu/shader_core.md) |
-| `server`  | [`decode`](decode/decode.md) |
+| `server`  | [`exu`](exu/exu.md), [`decode`](exu/decode.md) |
 
 ## `micro_if`
 
@@ -95,8 +95,8 @@ Decode Unit to FU Control channel. The Decode Unit issues a micro-op request and
 
 | Modport          | Used by                           |
 |---------------|---------------------------------------|
-| `client`  | [`decode`](decode/decode.md) |
-| `server`  | [`fu_control`](fu/fu_control.md) |
+| `client`  | [`decode`](exu/decode.md) |
+| `server`  | [`fu_control`](exu/functional_units/fu_control.md) |
 
 ## `fu_if`
 
@@ -118,8 +118,8 @@ FU Control to one functional unit channel. `req_opcode` is an `alu_op_t` for the
 
 | Modport          | Used by                           |
 |---------------|---------------------------------------|
-| `client`  | [`fu_control`](fu/fu_control.md) |
-| `server`  | [`alu`](fu/alu.md), [`cordic`](fu/cordic.md), [`multiplier`](fu/multiplier.md) |
+| `client`  | [`fu_control`](exu/functional_units/fu_control.md) |
+| `server`  | [`alu`](exu/functional_units/alu.md), [`cordic`](exu/functional_units/cordic.md), [`multiplier`](exu/functional_units/multiplier.md) |
 
 ## `sram_rd_if`
 

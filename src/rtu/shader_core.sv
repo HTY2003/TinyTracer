@@ -16,7 +16,7 @@ module shader_core (
     // RTU <-> Accumulator Interface
     colour_if.src                           sample,   // sample colour stream, to Accumulator
 
-    // RTU <-> Decode Interface
+    // RTU <-> EXU Interface
     macro_if.client                         macro
 );
 

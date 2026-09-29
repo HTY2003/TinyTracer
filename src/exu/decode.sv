@@ -7,18 +7,16 @@ module decode (
     input  logic        clk,
     input  logic        rst_n,
 
-    // RTU <-> Decode Interface
+    // RTU <-> Decode Interface (passed through by the EXU)
     macro_if.server     macro,
 
     // Decode <-> FU Interface
     micro_if.client     micro,
 
-    // Register File Ports (write port for INITIALIZE, read port 1 for LOAD)
-    output logic            rf_wen,
-    output logic [2:0]      rf_waddr,
-    output logic [WLEN-1:0] rf_wdata,
-    output logic [2:0]      rf_raddr,
-    input  logic [WLEN-1:0] rf_rdata
+    // Register File Ports: rf_load loads the macro-op operands in the cycle
+    // the macro-op is accepted; rf_result drives the macro-op result.
+    output logic                   rf_load,
+    input  tinytracer_pkg::vec3_t  rf_result
 );
 
 endmodule

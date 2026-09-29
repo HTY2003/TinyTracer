@@ -16,7 +16,7 @@ module intersection_unit (
     output tinytracer_pkg::vec3_t           collision_point, // Point of ray-object intersection
     output logic                            hit,             // Object hit flag
     
-    // RTU <-> Decode Interface
+    // RTU <-> EXU Interface
     macro_if.client                         macro
 );
 

@@ -21,7 +21,8 @@ interface colour_if;
   modport sink (input  valid, input  colour, output ready);
 endinterface
 
-// RTU <-> Decode: macro-op request and vector result response.
+// RTU <-> EXU: macro-op request and vector result response. The EXU passes
+// the channel through to Decode.
 interface macro_if;
   logic                        req_valid;
   tinytracer_pkg::macro_word_t req_op;

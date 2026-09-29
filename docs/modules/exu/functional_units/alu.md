@@ -1,12 +1,12 @@
 ---
-description: "Pipelined fixed-point multiplier."
+description: "Fixed-point ALU supporting addition, subtraction, and comparison."
 ---
 
-# `multiplier` — Fixed-point multiplier
+# `alu` — Fixed-point ALU
 
 ## Overview
 
-This module is a pipelined fixed-point multiplier using the TBD algorithm (replace TBD with implemented algorithm later).
+This module is a fixed-point ALU supporting addition, subtraction, and comparison operations.
 
 ## Parameters
 
@@ -29,6 +29,6 @@ This module is a pipelined fixed-point multiplier using the TBD algorithm (repla
 
 | Type          | Description                           |
 |---------------|---------------------------------------|
-| [`fu_if.server`](../tinytracer_if.md#fu_if)  | Micro-op request and response channel from FU Control |
+| [`fu_if.server`](../../tinytracer_if.md#fu_if)  | Micro-op request and response channel from FU Control |
 
 ## Architecture Overview

@@ -20,9 +20,10 @@ TinyTracer consists of the following components:
 - **I/O**: The I/O Unit communicates between the host device and TinyTracer, which occurs when a new scene is being loaded into memory or pixel data is being streamed back to the host device.
 - **SRAM**: The SRAM holds bounding volume data and scene information.
 - **Ray Tracing Unit (RTU)**: Each step of the ray tracing algorithm, including ray generation, computing ray-object intersections, and colouring pixels, is executed by the RTU. The RTU sends scalar and vector instructions to the EXU to execute.
-- **Execution Unit (EXU)**: TinyTracer's backend handling instruction decode and execution
-- **Decode**: The Decode Unit decomposes more complex instructions from the RTU into simple "micro-operations" that the FUs can execute. 
-- **Functional Units (FUs)**: Includes ALU, Multiplier, and CORDIC for fixed-point arithmetic.
+- **Execution Unit (EXU)**: TinyTracer's backend handling instruction decode and execution. The EXU receives instructions (macro-ops) from the RTU and returns their results; this is its only connection to the rest of the chip. It contains:
+    - **Decode**: The Decode Unit decomposes more complex instructions from the RTU into simple "micro-operations" (read from the µOp ROM) that the FUs can execute.
+    - **Register File**: Holds the operands and results of micro-operations.
+    - **Functional Units (FUs)**: Includes ALU, Multiplier, and CORDIC for fixed-point arithmetic.
 - **Accumulator**: The Accumulator buffers computed pixel colours from the RTU and averages the results over the number of samples per pixel.
 
 

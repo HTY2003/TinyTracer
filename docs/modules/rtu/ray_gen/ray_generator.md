@@ -40,6 +40,6 @@ This module generates primary and secondary rays to check for ray-object interse
 
 | Type          | Description                           |
 |---------------|---------------------------------------|
-| [`macro_if.client`](../../tinytracer_if.md#macro_if)  | Macro-op request and response channel to the Decode Unit |
+| [`macro_if.client`](../../tinytracer_if.md#macro_if)  | Macro-op request and response channel to the Execution Unit |
 
 ## Architecture Overview

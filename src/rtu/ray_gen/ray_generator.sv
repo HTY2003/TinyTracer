@@ -18,7 +18,7 @@ module ray_generator (
     output tinytracer_pkg::vec3_t           gen_ray_dir,     // Direction of generated ray
     output logic                            gen_ray_valid,   // Generated rays are valid unless they are from emissive material
 
-    // RTU <-> Decode Interface
+    // RTU <-> EXU Interface
     macro_if.client                         macro
 );
 

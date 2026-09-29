@@ -1,12 +1,12 @@
 ---
-description: "Ray Tracing Unit that sequences the ray-tracing algorithm with an FSM and issues instructions to the Decode Unit."
+description: "Ray Tracing Unit that sequences the ray-tracing algorithm with an FSM and issues instructions to the Execution Unit."
 ---
 
 # `rtu` — Instantiates Ray Generator, Intersection Unit, and Shader Core
 
 ## Overview
 
-This module uses a finite-state machine (FSM) to execute each step of the ray-tracing algorithm. Each step of the algorithm is a series of computations, where each computation is encoded as an instruction. These instructions are sent to the Decode Unit to decompose more complex instructions (like vector operations) into simple "micro-operations" that the individual scalar FUs can process. The RTU controls the Ray Generator, Intersection Unit, and Shader Core submodules to compute `SPP` sample colours per pixel. 
+This module uses a finite-state machine (FSM) to execute each step of the ray-tracing algorithm. Each step of the algorithm is a series of computations, where each computation is encoded as an instruction. These instructions are sent to the Execution Unit, whose Decode Unit decomposes more complex instructions (like vector operations) into simple "micro-operations" that the individual scalar FUs can process. The RTU controls the Ray Generator, Intersection Unit, and Shader Core submodules to compute `SPP` sample colours per pixel. 
 
 ## Parameters
 
@@ -38,7 +38,7 @@ This module uses a finite-state machine (FSM) to execute each step of the ray-tr
 |---------------|---------------------------------------|
 | [`render_if.sink`](../tinytracer_if.md#render_if)  | Render strobe and image dimensions from the I/O Unit |
 | [`sram_rd_if.client`](../tinytracer_if.md#sram_rd_if)  | SRAM read request and response channel |
-| [`macro_if.client`](../tinytracer_if.md#macro_if)  | Macro-op request and response channel to the Decode Unit |
+| [`macro_if.client`](../tinytracer_if.md#macro_if)  | Macro-op request and response channel to the Execution Unit |
 | [`colour_if.src`](../tinytracer_if.md#colour_if)  | Sample pixel colour stream to the Accumulator |
 
 ## Architecture Overview

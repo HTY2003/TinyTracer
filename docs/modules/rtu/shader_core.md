@@ -36,6 +36,6 @@ This module uses the results of a ray-object intersection, the intersected objec
 | Type          | Description                           |
 |---------------|---------------------------------------|
 | [`colour_if.src`](../tinytracer_if.md#colour_if)  | Sample pixel colour stream to the Accumulator |
-| [`macro_if.client`](../tinytracer_if.md#macro_if)  | Macro-op request and response channel to the Decode Unit |
+| [`macro_if.client`](../tinytracer_if.md#macro_if)  | Macro-op request and response channel to the Execution Unit |
 
 ## Architecture Overview

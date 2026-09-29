@@ -13,7 +13,7 @@ module rtu (
     // RTU <-> SRAM Interface
     sram_rd_if.client   sram,
 
-    // RTU <-> Decode Interface
+    // RTU <-> EXU Interface
     macro_if.client     macro,
 
     // RTU <-> Accumulator Interface

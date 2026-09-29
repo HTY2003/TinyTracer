@@ -6,7 +6,7 @@ description: "Decode Unit that expands RTU macro-ops into micro-ops for the func
 
 ## Overview
 
-This module decomposes complex macro-ops from the RTU into simple micro-ops that the FUs can compute. The Decode Unit also composes micro-op results from the FUs into macro-op results to send back to the RTU.
+This module sits inside the [Execution Unit](exu.md) and decomposes complex macro-ops from the RTU into simple micro-ops that the FUs can compute. The Decode Unit also composes micro-op results from the FUs into macro-op results to send back to the RTU.
 
 ## Parameters
 
@@ -26,22 +26,19 @@ This module decomposes complex macro-ops from the RTU into simple micro-ops that
 |---------------|:------------:|---------------------------------------|
 | `clk`  |     1      | Clock signal |
 | `rst_n`  |     1      | Active-low reset |
-| `rf_rdata`  |     `WLEN`      | Register file read port 1 data |
+| `rf_result`  |     `vec3_t`      | Register file R0-R2, sent to the RTU as the macro-op result |
 
 ### Outputs
 
 | Name          |   Width    | Description                           |
 |---------------|:------------:|---------------------------------------|
-| `rf_wen`  |     1      | Register file write enable |
-| `rf_waddr`  |     3      | Register file write address |
-| `rf_wdata`  |     `WLEN`      | Register file write data |
-| `rf_raddr`  |     3      | Register file read port 1 address |
+| `rf_load`  |     1      | Loads the macro-op operands into the register file; high in the cycle a macro-op is accepted |
 
 ### Interfaces
 
 | Type          | Description                           |
 |---------------|---------------------------------------|
-| [`macro_if.server`](../tinytracer_if.md#macro_if)  | Macro-op request and response channel from the RTU |
+| [`macro_if.server`](../tinytracer_if.md#macro_if)  | Macro-op request and response channel from the RTU, passed through by the EXU |
 | [`micro_if.client`](../tinytracer_if.md#micro_if)  | Micro-op request and response channel to FU Control |
 
 ## Architecture Overview
@@ -51,26 +48,14 @@ This overview will refer to the encodings for macro and micro instructions defin
 ![Decode FSM](../../svg/TT_DecodeFSM.svg)
 
 ### FSM States
-- `IDLE`: Waiting for valid macro-op
+- `IDLE`: Waiting for valid macro-op; loads the register file when one is accepted
 - `DECODE`: Decoding macro-op fields
-- `INITIALIZE`: Initializing register file based on macro-op
 - `DISPATCH`: Issuing micro-ops based on macro-op
-- `LOAD`: Reading register file to construct macro-op result
 - `WRITEBACK`: Waiting for RTU to accept macro-op result
 
-When a valid macro-op is detected, the FSM transitions to the `DECODE` state. In this state, the macro-op fields are recorded in the `macro_op` register. The following `INITIALIZE` state sets the `reg_init_cnt` counter to the number of registers that need to be initialized for a macro-op. The register file is written beginning from register R0, and `reg_init_cnt` is set using the `MACROOP` field as follows:
+When a valid macro-op is accepted (`macro.req_valid` and `macro.req_ready` both high), the Decode Unit asserts `rf_load` for that cycle, which loads all of the macro-op operands into the register file in parallel: $u_1$, $u_2$, $u_3$ into R0-R2 and $v_1$, $v_2$, $v_3$ into R3-R5. The layout is the same for every macro-op, and the micro-op sequences in [Instruction Encoding](../../encoding/instruction.md) are written against it. The FSM then transitions to the `DECODE` state, where only the `MACROOP` field is recorded in the `macro_op` register; the operands live in the register file, so they are not stored a second time. `DECODE` then transitions to `DISPATCH`.
 
-| `MACROOP`  |   `reg_init_cnt` |
-|:----:|:-------:|
-| `M_SQRT`, `M_COS`, `M_RECP`  | 1 | 
-| `M_ADD`, `M_SUB`, `M_EQ`, `M_NE`, `M_LT`, `M_GE`, `M_MUL`, `M_DIV`, `M_MAG`  | 2 | 
-| `M_NORM`  | 3 | 
-| `M_SCAL_VEC`, `M_SPHERE_NORM`  | 4 | 
-| `M_VADD`, `M_VSUB`, `M_DOT`, `M_CROSS`  | 6 | 
-
-Alternatively, you can think of `reg_init_cnt` as the number of scalar operands used by a macro-op. For example, scalar-vector multiplication (`M_SCAL_VEC`) uses one scalar operand as the multiplier and three scalar operands as vector elements to multiply by, resulting in a `reg_init_cnt` of 4. Every cycle `reg_init_cnt` is decremented. As long as there are operands remaining that need to be written to the register file (`reg_init_cnt` != 0), the FSM remains in the `INITIALIZE` state. Once all the macro-op operands are written to the register file (`reg_init_cnt` == 0), the FSM transitions to the `DISPATCH` state.
-
-In `DISPATCH`, the Decode Unit uses the `MACROOP` field to select the sequence of micro-ops that execute the desired macro-op. For scalar operations, the selected micro-op is the same as the macro-op, setting `MICROOP` to `MACROOP[3:0]`. For vector operations, the macro to micro-op decompositions defined in [Instruction Encoding](../../encoding/instruction.md) are stored in a small read-only-memory (ROM), where each row holds a `MICRO_W`-bit micro-op and a `barrier` bit for pipeline hazards. The Decode Unit uses the `MACROOP` field to select an address `op_addr` to begin reading micro-ops from, along with an address `op_addr_end` to read up to (exclusive). `op_addr_end` - `op_addr` equals the number of micro-ops required to execute a macro-op. Note that scalar macro-ops also have an entry in the ROM to enable the same FSM transition logic to be used for both scalar and vector macro-ops. The following table shows how `MACROOP` is mapped to ROM addresses:
+In `DISPATCH`, the Decode Unit uses the `MACROOP` field to select the sequence of micro-ops that execute the desired macro-op. For scalar operations, the selected micro-op is the same as the macro-op, setting `MICROOP` to `MACROOP[3:0]`. For vector operations, the macro to micro-op decompositions defined in [Instruction Encoding](../../encoding/instruction.md) are stored in a small read-only-memory (ROM), where each row holds a `MICRO_W`-bit micro-op and a `barrier` bit for pipeline hazards. The Decode Unit uses the `MACROOP` field to select an address `op_addr` to begin reading micro-ops from, along with an address `op_addr_end` to read up to (exclusive). `op_addr_end` - `op_addr` equals the number of micro-ops required to execute a macro-op. Note that scalar macro-ops also have an entry in the ROM (R0 $\leftarrow$ R0, R3, i.e. $u_1$ op $v_1$) to enable the same FSM transition logic to be used for both scalar and vector macro-ops. The following table shows how `MACROOP` is mapped to ROM addresses:
 
 | `MACROOP`  |   `op_addr` | `op_addr_end` 
 |:----:|:-------:|:-------:|
@@ -97,10 +82,10 @@ In `DISPATCH`, the Decode Unit uses the `MACROOP` field to select the sequence o
  
  The second possible action is stalling, which occurs when the pipeline is nonempty and there are either no remaining micro-ops to execute or a micro-op's `barrier` bit is set. Stalling also occurs when the `fu_control` module is unable to accept a micro-op request. 
 
- Once a macro-op is complete (`curr_addr` == `op_addr_end` and `inflight` == 0), the FSM transitions to the `LOAD` state. In the `LOAD` state, the Decode Unit reads macro-op results from the register file. The number of results to read from the register file is `reg_result_cnt`, which is analogous to `reg_init_cnt` for the `INITIALIZE` state. `reg_result_cnt` is set to 1 for scalar results and 3 for vector results. The register file is read beginning from register R0, and `reg_result_cnt` decrements every cycle. Once every result is recorded into the `macro_op_result` register (`reg_result_cnt` == 0), the FSM transitions to the `WRITEBACK` state.
+ Once a macro-op is complete (`curr_addr` == `op_addr_end` and `inflight` == 0), the FSM transitions to the `WRITEBACK` state. The macro-op result needs no separate read step: the register file drives R0-R2 onto `rf_result`, which the Decode Unit passes straight to `macro.resp_result`. Scalar results are in R0 (`resp_result.x`).
  
  During the `WRITEBACK` state, the FSM checks if the RTU can accept a macro-op result (in general it should always be able to). If the RTU is ready, the Decode Unit sends the macro-op result over the macro-op response channel and transitions back to the `IDLE` state.
 
 ### Timing Behaviour
 
-It takes 2 cycles to transition from `IDLE` to `DECODE` to `INITIALIZE`. The number of cycles spent in the `INITIALIZE` state ranges from 1-6 cycles, since the macro-op operand count ranges from 1-6. Next, the time spent in the `DISPATCH` state ranges from 3-77 cycles (for `M_ADD` and `M_NORM` operations, assuming 16 cycle latency for the multiplier and CORDIC). The time spent in the following `LOAD` state ranges from 2-4 cycles, since the number of scalar results range from 1-3. Finally, `WRITEBACK` takes 1 cycle. Hence, the latency of executing a macro-op ranges from 9-90 cycles.
+It takes 2 cycles to transition from `IDLE` to `DECODE` to `DISPATCH`; the register file is loaded on the first of these. Next, the time spent in the `DISPATCH` state ranges from 3-77 cycles (for `M_ADD` and `M_NORM` operations, assuming 16 cycle latency for the multiplier and CORDIC). Finally, `WRITEBACK` takes 1 cycle. Hence, the latency of executing a macro-op ranges from 6-80 cycles.

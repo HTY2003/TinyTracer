@@ -42,6 +42,6 @@ This module checks if an incident ray intersects an object in the scene and prov
 
 | Type          | Description                           |
 |---------------|---------------------------------------|
-| [`macro_if.client`](../tinytracer_if.md#macro_if)  | Macro-op request and response channel to the Decode Unit |
+| [`macro_if.client`](../tinytracer_if.md#macro_if)  | Macro-op request and response channel to the Execution Unit |
 
 ## Architecture Overview

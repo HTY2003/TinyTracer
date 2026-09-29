@@ -1,12 +1,12 @@
 ---
-description: "Top-level Tiny Tapeout module for TinyTracer, instantiating the SRAM controller, RTU, Decode Unit, functional units, and I/O Unit."
+description: "Top-level Tiny Tapeout module for TinyTracer, instantiating the SRAM controller, RTU, Execution Unit, Accumulator, and I/O Unit."
 ---
 
 # `tt_um_tinytracer` — Top-Level Module for TinyTracer
 
 ## Overview
 
-This module instantiates the SRAM, SRAM controller, RTU, Accumulator, Decode Unit, FU Control Unit, Register File, and I/O Unit.
+This module instantiates the SRAM, SRAM controller, RTU, Execution Unit (EXU), Accumulator, and I/O Unit. The EXU in turn instantiates the Decode Unit, Register File, and FU Control Unit (see [`exu`](exu/exu.md)).
 
 ## Parameters
 

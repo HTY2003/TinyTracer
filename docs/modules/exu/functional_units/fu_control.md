@@ -41,6 +41,6 @@ This module is a top-level wrapper that instantiates the 3 functional units (ALU
 
 | Type          | Description                           |
 |---------------|---------------------------------------|
-| [`micro_if.server`](../tinytracer_if.md#micro_if)  | Micro-op request and response channel from the Decode Unit |
+| [`micro_if.server`](../../tinytracer_if.md#micro_if)  | Micro-op request and response channel from the Decode Unit |
 
 ## Architecture Overview

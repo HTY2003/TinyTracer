@@ -107,9 +107,12 @@ $$
 # Macro to Micro Decomposition
 
 * These decompositions are represented using the micro-op encoding listed above
-* For each vector macro-op, the register file is populated based on the initial values described in each operation; the unspecified registers are left unchanged
-  * The output mapping describes how the Decode Unit interprets the register file's contents before sending a macro-op result back to the RTU
-* For scalar macro-ops, write scalar operands to R0 and R1 and set R0 to the destination register as well
+* Every macro-op loads the register file with the same layout in a single cycle: R0, R1, R2 $\leftarrow$ $u_1$, $u_2$, $u_3$ and R3, R4, R5 $\leftarrow$ $v_1$, $v_2$, $v_3$; R6 and R7 are left unchanged
+  * The initial register file state listed for each operation shows only the registers that operation uses
+* Every macro-op leaves its result in R0-R2 ($w_1$, $w_2$, $w_3$), which the register file sends back to the RTU directly; scalar results are in R0
+  * The output mapping in each operation shows where each result element is
+* Micro-ops read their source registers when they are issued, so a micro-op may overwrite a register that an earlier, still in-flight micro-op reads (see Scalar-Vector Multiplication)
+* For scalar macro-ops, the operands are $u_1$ in R0 and $v_1$ in R3, and the single micro-op is OP R0 $\leftarrow$ R0, R3 (unary operations only use R0)
 
 #### Vector Add
 
@@ -156,14 +159,14 @@ Operation: $\vec{w} = \vec{u}-\vec{v}$
 Operation: $\vec{w} = u_1*\vec{v}$
 
 * __Initial Register File State__:
-    * R0 $\leftarrow$ $v_1$
-    * R1 $\leftarrow$ $v_2$
-    * R2 $\leftarrow$ $v_3$
-    * R3 $\leftarrow$ $u_1$
+    * R0 $\leftarrow$ $u_1$
+    * R3 $\leftarrow$ $v_1$
+    * R4 $\leftarrow$ $v_2$
+    * R5 $\leftarrow$ $v_3$
 * __Instructions__:
-    * MUL R0 $\leftarrow$ R0, R3 ($u_1$\*$v_1$)
-    * MUL R1 $\leftarrow$ R1, R3 ($u_1$\*$v_2$)
-    * MUL R2 $\leftarrow$ R2, R3 ($u_1$\*$v_3$)
+    * MUL R1 $\leftarrow$ R0, R4 ($u_1$\*$v_2$)
+    * MUL R2 $\leftarrow$ R0, R5 ($u_1$\*$v_3$)
+    * MUL R0 $\leftarrow$ R0, R3 ($u_1$\*$v_1$), issued last since it overwrites $u_1$
 * __Output Mapping__:
     * $w_1$ = R0
     * $w_2$ = R1
@@ -240,14 +243,14 @@ Operation: $\vec{w} = \frac{\vec{u}}{|\vec{u}|}$
 **Sphere Mode:**
 
 * __Initial Register File State__:
-    * R0 $\leftarrow$ $v_1$
-    * R1 $\leftarrow$ $v_2$
-    * R2 $\leftarrow$ $v_3$
-    * R3 $\leftarrow$ $u_1$ (sphere radius)
+    * R0 $\leftarrow$ $u_1$ (sphere radius)
+    * R3 $\leftarrow$ $v_1$
+    * R4 $\leftarrow$ $v_2$
+    * R5 $\leftarrow$ $v_3$
 * __Instructions__:
-    * DIV R0 $\leftarrow$ R0, R3 ($v_1$ / $r$)
-    * DIV R1 $\leftarrow$ R1, R3 ($v_2$ / $r$)
-    * DIV R2 $\leftarrow$ R2, R3 ($v_3$ / $r$)
+    * DIV R1 $\leftarrow$ R4, R0 ($v_2$ / $r$)
+    * DIV R2 $\leftarrow$ R5, R0 ($v_3$ / $r$)
+    * DIV R0 $\leftarrow$ R3, R0 ($v_1$ / $r$), issued last since it overwrites $r$
 * __Output Mapping__:
     * $w_1$ = R0
     * $w_2$ = R1

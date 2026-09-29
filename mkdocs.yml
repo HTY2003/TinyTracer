@@ -26,15 +26,14 @@ nav:
       - "rng — Random number generator": modules/rtu/ray_gen/rng.md
       - "intersection_unit — Computes ray-object intersection": modules/rtu/intersection_unit.md
       - "shader_core — Colours pixels based on ray-object intersection results and material metadata": modules/rtu/shader_core.md
-  - FU:
-      - "fu_control — Instantiates functional units": modules/fu/fu_control.md
-      - "alu — Fixed-point ALU": modules/fu/alu.md
-      - "cordic — CORDIC Unit": modules/fu/cordic.md
-      - "multiplier — Fixed-point multiplier": modules/fu/multiplier.md
-  - Decode:
-      - "decode — Decodes messages between the RTU and FUs": modules/decode/decode.md
-  - Register File:
-      - "reg_file — Register file for the FUs": modules/reg_file/reg_file.md
+  - EXU:
+      - "exu — Instantiates Decode Unit, Register File, and Functional Units": modules/exu/exu.md
+      - "decode — Decodes messages between the RTU and FUs": modules/exu/decode.md
+      - "reg_file — Register file for the FUs": modules/exu/reg_file.md
+      - "fu_control — Instantiates functional units": modules/exu/functional_units/fu_control.md
+      - "alu — Fixed-point ALU": modules/exu/functional_units/alu.md
+      - "cordic — CORDIC Unit": modules/exu/functional_units/cordic.md
+      - "multiplier — Fixed-point multiplier": modules/exu/functional_units/multiplier.md
   - Accumulator:
       - "accumulator — Buffer between the RTU and I/O Unit": modules/accumulator/accumulator.md
 
