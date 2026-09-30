@@ -1,7 +1,4 @@
 `default_nettype wire
-/* verilator lint_off IMPORTSTAR */
-import tinytracer_pkg::*;
-/* verilator lint_on IMPORTSTAR */
 
 // Execution Unit: wraps Decode (with its micro-op ROM), the register file, and
 // FU Control with its functional units. The macro-op channel is the only
@@ -27,11 +24,11 @@ module exu (
   tinytracer_pkg::vec3_t rf_result;
   logic                  rf_wen;
   logic [2:0]            rf_waddr;
-  logic [WLEN-1:0]       rf_wdata;
+  logic [tinytracer_pkg::WLEN-1:0]       rf_wdata;
   logic [2:0]            rf_raddr1;
-  logic [WLEN-1:0]       rf_rdata1;
+  logic [tinytracer_pkg::WLEN-1:0]       rf_rdata1;
   logic [2:0]            rf_raddr2;
-  logic [WLEN-1:0]       rf_rdata2;
+  logic [tinytracer_pkg::WLEN-1:0]       rf_rdata2;
 
   decode u_decode (
       .clk       (clk),

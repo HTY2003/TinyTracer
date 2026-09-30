@@ -14,8 +14,6 @@ This module is a fixed-point CORDIC engine enabling support for division, cosine
 |---------------|:------------:|---------------------------------------|
 | `WLEN`  |     16      | Word length              |
 | `ITER`  |     `WLEN`      | Number of CORDIC iterations             |
-| `Q_INT`       |     8      | Integer bits in fixed point format    |
-| `Q_FRAC`      |     8      | Fractional bits in fixed point format |
 
 ## Ports
 
@@ -248,6 +246,21 @@ Hyperbolic CORDIC introduces a specific hyperbolic gain factor $A_h \approx 0.82
 
 $$\sqrt{w} = x_{\text{rev}} \cdot \frac{1}{A_h}$$
 
+## Number Formats
+
+The CORDIC unit works on POS and DIR numbers (see [Number Formats](../../../encoding/number_format.md)). `req_fmt` only affects square root:
+
+| Operation | Operands | Result |
+|----|----|----|
+| Division | $A / B$, computed as $(A \ll 14) \div B$ | POS $\div$ POS $\rightarrow$ DIR, POS $\div$ DIR $\rightarrow$ POS, DIR $\div$ DIR $\rightarrow$ DIR |
+| Cosine | $A\cos B$, $B$ in radians (DIR), $\lvert B \rvert \le 1.743$ | same format as $A$ |
+| Vector Magnitude | $A$ and $B$ in the same format | same format |
+| Square Root | $A$ in POS (`req_fmt` = 0) or DIR (`req_fmt` = 1) | same format as $A$ |
+
+FU Control passes a micro-op's RS1 as $A$ and RS2 as $B$. With $A$ = 1.0, division gives a reciprocal and cosine gives a plain cosine.
+
+Results that do not fit in 16 bits clamp to `16'h7FFF` or `16'h8000`. The RTU relies on this: a ground distance that clamps to `16'h7FFF` means the ground is too far away to hit.
+
 ## Timing Overview
 
 Below is a table detailing the number of cycles required for each operation:
@@ -258,3 +271,5 @@ Below is a table detailing the number of cycles required for each operation:
 | **Vector Magnitude** | 1 cycle | $N$ cycles | 0 cycles | 1 to 2 cycles | $N + 2$ to $N + 3$ cycles |
 | **Division** | 1 cycle | $N$ cycles | 0 cycles | 0 cycles | $N + 1$ cycles |
 | **Square Root** | 1 to 2 cycles | $N + 2$ cycles | 1 cycle | 1 to 2 cycles | $N + 2 + 3$ to $N + 2 + 5$ cycles |
+
+With $N$ = 16 iterations (and 2 repeated iterations for square root), the worst-case latencies are: division 17 cycles, cosine 18, vector magnitude 19, and square root 23. The unit takes one operation at a time.

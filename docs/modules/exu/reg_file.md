@@ -51,4 +51,4 @@ The register file holds eight `WLEN`-bit registers, R0 to R7, in flip-flops. Mic
 - __Load and write in the same cycle__: this cannot happen, since the Decode Unit only loads while no micro-ops are in flight. If it did, `load` takes priority.
 - __Reset__: all registers are cleared to zero.
 
-The Decode Unit uses the parallel load and `result`; FU Control uses the write port and both read ports. The two never access the register file at the same time: the Decode Unit loads operands in the cycle it accepts a macro-op, before any micro-op is issued, and reads `result` in `WRITEBACK`, after every micro-op has completed.
+The Decode Unit uses the parallel load and `result`; FU Control uses the write port and both read ports. The two never access the register file at the same time: the Decode Unit loads operands in the cycle it accepts a macro-op, before any micro-op reads or writes a register, and reads `result` in `WRITEBACK`, after every micro-op has completed. A scalar macro-op's micro-op issues in the same cycle as the load, but it takes its operands from the request rather than the read ports, and its result is written to R0 at least one cycle later.

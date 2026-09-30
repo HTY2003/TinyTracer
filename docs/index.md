@@ -8,19 +8,21 @@
 
 ## Encodings
 
-- [Scene Encoding](encoding/scene.md): Encoding for bounding volumes and primitives
+- [Number Formats](encoding/number_format.md): Fixed-point formats for positions, directions, and colours
+- [Scene Encoding](encoding/scene.md): Memory map, header, bounding volumes, and primitives
 - [Instruction Encoding](encoding/instruction.md): Encoding for scalar and vector instructions
 - [UART Frame Encoding](encoding/uart_frame.md): Encoding for UART frames
 
 ## SRAM
 
 - [`sram_control`](modules/sram/sram_control.md): SRAM Controller
+- [`scene_sram`](modules/sram/scene_sram.md): Scene SRAM
 
 ## I/O
 
 - [`io`](modules/io/io.md): Communicates with external device to load scenes and render pixels
 - [`uart`](modules/io/uart.md): UART transceiver
-- [`clkdiv`](modules/io/clkdiv.md): Fractional Clock Divider
+- [`clkdiv`](modules/io/clkdiv.md): Derives a clock as an arbitrary fraction of `clk`
 
 ## RTU
 

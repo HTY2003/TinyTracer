@@ -13,7 +13,7 @@ The Execution Unit (EXU) is TinyTracer's backend. It receives macro-ops from the
 | Name          |   Default    | Description                           |
 |---------------|:------------:|---------------------------------------|
 | `WLEN`  |     16      | Word length              |
-| `MACRO_W`  |     101    | Macro operation width             |
+| `MACRO_W`  |     102    | Macro operation width             |
 | `MACROOP_W`  |     5      | Macro opcode width |
 | `MICRO_W`  |     13    | Micro operation width             |
 | `MICROOP_W`  |     4      | Micro opcode width |
@@ -35,4 +35,6 @@ The Execution Unit (EXU) is TinyTracer's backend. It receives macro-ops from the
 
 ## Architecture Overview
 
+The EXU wires the macro-op channel to the [Decode Unit](decode.md) and the macro-op operands $\mathbf{\vec{u}}$ and $\mathbf{\vec{v}}$ to the [Register File](reg_file.md)'s parallel load. The Decode Unit holds the micro-op ROM and issues micro-ops to [FU Control](functional_units/fu_control.md) over `micro_if`. FU Control reads operands from the register file (or, for scalar macro-ops, from the request), starts the ALU, multiplier, or CORDIC unit, and writes each result back to the register file. The macro-op result is always R0-R2 of the register file.
 
+A macro-op takes 3-65 cycles (see [Decode Unit](decode.md#timing-behaviour)). The EXU works on one macro-op at a time.

@@ -5,7 +5,7 @@ project:
   discord:      ""      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
   description:  "Ray-tracing graphics chip"      # One line description of what your project does
   language:     "SystemVerilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
-  clock_hz:     0       # Clock frequency in Hz (or 0 if not applicable)
+  clock_hz:     25000000 # Clock frequency in Hz (or 0 if not applicable)
 
   # How many tiles your design occupies? A single tile is about 167x108 uM.
   tiles: "4x2"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
@@ -22,6 +22,7 @@ project:
     - "tt_um_tinytracer.sv"
     - "accumulator.sv"
     - "sram_control.sv"
+    - "scene_sram.sv"
     - "exu/exu.sv"
     - "exu/decode.sv"
     - "exu/reg_file.sv"
@@ -31,6 +32,7 @@ project:
     - "exu/functional_units/multiplier.sv"
     - "io/io.sv"
     - "io/uart.sv"
+    - "io/clkdiv.sv"
     - "rtu/intersection_unit.sv"
     - "rtu/ray_gen/ray_generator.sv"
     - "rtu/ray_gen/rng.sv"

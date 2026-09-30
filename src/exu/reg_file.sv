@@ -1,7 +1,4 @@
 `default_nettype wire
-/* verilator lint_off IMPORTSTAR */
-import tinytracer_pkg::*;
-/* verilator lint_on IMPORTSTAR */
 
 module reg_file (
     input  logic        clk,
@@ -18,13 +15,13 @@ module reg_file (
     // Write Port (FU Control)
     input  logic            wen,
     input  logic [2:0]      waddr,
-    input  logic [WLEN-1:0] wdata,
+    input  logic [tinytracer_pkg::WLEN-1:0] wdata,
 
     // Read Ports (FU Control)
     input  logic [2:0]      raddr1,
-    output logic [WLEN-1:0] rdata1,
+    output logic [tinytracer_pkg::WLEN-1:0] rdata1,
     input  logic [2:0]      raddr2,
-    output logic [WLEN-1:0] rdata2
+    output logic [tinytracer_pkg::WLEN-1:0] rdata2
 );
 
 endmodule

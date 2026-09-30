@@ -4,11 +4,18 @@ site_url: https://uw-asic.github.io/TinyTracer/
 
 # Sidebar entries are written as "name — description". The override in
 # theme_overrides/nav.html renders the name in code font.
+# Not part of the design docs site: the Tiny Tapeout datasheet and the
+# docs build requirements.
+exclude_docs: |
+  info.md
+  requirements.txt
+
 nav:
   - Home: index.md
   - Introduction:
       - Introduction: introduction.md
   - Encoding:
+      - "Number Formats": encoding/number_format.md
       - "Scene Encoding": encoding/scene.md
       - "Instruction Encoding": encoding/instruction.md
       - "UART Frame Encoding": encoding/uart_frame.md
@@ -17,9 +24,11 @@ nav:
       - "tinytracer_if — Interfaces between TinyTracer modules": modules/tinytracer_if.md
   - SRAM:
       - "sram_control — SRAM Controller": modules/sram/sram_control.md
+      - "scene_sram — Scene SRAM": modules/sram/scene_sram.md
   - I/O:
       - "io — Communicates with external device to load scenes and render pixels": modules/io/io.md
       - "uart — UART transceiver": modules/io/uart.md
+      - "clkdiv — Derives a clock as an arbitrary fraction of clk": modules/io/clkdiv.md
   - RTU:
       - "rtu — Instantiates Ray Generator, Intersection Unit, and Shader Core": modules/rtu/rtu.md
       - "ray_generator — Generates primary and secondary rays": modules/rtu/ray_gen/ray_generator.md
