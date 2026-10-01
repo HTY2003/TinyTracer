@@ -87,8 +87,8 @@ logic [47:0]              tmp2;
 logic [47:0]              tmp1_p1;
 
 // State transition wires
-assign obj3_to_glo  = |sram_data[1:0];
-assign obj3_to_zro  = last_bounce;
+assign obj3_to_glo        = |sram_data[1:0];
+assign obj3_to_zro        = last_bounce;
 
 // Next-state wires
 assign idle_gnd_col_ns    = (ray_origin[9] ^ ray_origin[25]) ? ground_a : ground_b;
