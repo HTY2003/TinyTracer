@@ -43,7 +43,7 @@ module shader_core #(
 );
 
 localparam SCRATCH_BITS     = 40;
-localparam STATE_BITS       = 4;
+localparam STATE_BITS       = 5;
 
 typedef enum logic [STATE_BITS-1:0] {
     STATE_IDLE      ,
@@ -54,12 +54,19 @@ typedef enum logic [STATE_BITS-1:0] {
     STATE_OBJ3      ,
     STATE_OBJ3W     ,
     STATE_SUR       ,
+    STATE_SURW      ,
     STATE_SKY1      ,
+    STATE_SKY1W     ,
     STATE_SKY2      ,
+    STATE_SKY2W     ,
     STATE_SKY3      ,
+    STATE_SKY3W     ,
     STATE_SKY4      ,
+    STATE_SKY4W     ,
     STATE_GLO1      ,
+    STATE_GLO1W     ,
     STATE_GLO2      ,
+    STATE_GLO2W     ,
     STATE_END_SAMP  ,
     STATE_END_SUR
 } state_t;
@@ -166,7 +173,8 @@ always_ff @(posedge clk or negedge rst_n) begin
           default:;
         endcase
 
-      STATE_SUR: if (resp_valid)  state_r <= STATE_END_SUR;
+      STATE_SUR:  if (req_ready)  state_r <= STATE_SURW;
+      STATE_SURW: if (resp_valid) state_r <= STATE_END_SUR;
       STATE_END_SUR:              state_r <= STATE_IDLE;
       STATE_END_SAMP:             state_r <= STATE_IDLE;
       default:;
@@ -212,7 +220,7 @@ always_ff @(posedge clk or negedge rst_n) begin
   else begin
     case (state_r)
       STATE_IDLE: if (start & new_sample) att_r <= '1;
-      STATE_SUR:  if (resp_valid)         att_r <= sur_att_ns;
+      STATE_SURW: if (resp_valid)         att_r <= sur_att_ns;
       default:;
     endcase
   end
