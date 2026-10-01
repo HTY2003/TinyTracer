@@ -149,7 +149,7 @@ always_ff @(posedge clk or negedge rst_n) begin
           4'b110?:  state_r <= STATE_OBJ1;          // Object surface
           4'b1111:  state_r <= STATE_END_SAMP;      // Zero sample
           4'b1110:  state_r <= STATE_SUR;           // Ground surface
-          default:  ;
+          default:;
         endcase
 
       STATE_OBJ1:                   state_r <= STATE_OBJ1W;
@@ -163,14 +163,13 @@ always_ff @(posedge clk or negedge rst_n) begin
           3'b11?: state_r <= STATE_GLO1;                // Glow sample
           3'b101: state_r <= STATE_END_SAMP;            // Zero sample
           3'b100: state_r <= STATE_SUR;                 // Ground surface
-          default:  ;
+          default:;
         endcase
 
       STATE_SUR: if (resp_valid)  state_r <= STATE_END_SUR;
       STATE_END_SUR:              state_r <= STATE_IDLE;
       STATE_END_SAMP:             state_r <= STATE_IDLE;
-
-      default: ;
+      default:;
     endcase
   end
 end
@@ -187,7 +186,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         casez ({start, hit, hit_ground, last_bounce})
           4'b1111:  scratch_r[37:0]   <= '0;                        // Zero sample
           4'b1110:  scratch_r[25:0]   <= {2'b00, idle_gnd_col_ns};  // Ground surface
-          default:  ;
+          default:;
         endcase
       
       STATE_OBJ1W:  scratch_r[7:0]    <= sram_data[15:8];
@@ -199,7 +198,7 @@ always_ff @(posedge clk or negedge rst_n) begin
           default:  scratch_r[39:24]  <= sram_data[15:0];
         endcase
 
-      default:  ;
+      default:;
     endcase
   end
 end
@@ -214,7 +213,7 @@ always_ff @(posedge clk or negedge rst_n) begin
     case (state_r)
       STATE_IDLE: if (start & new_sample) att_r <= '1;
       STATE_SUR:  if (resp_valid)         att_r <= sur_att_ns;
-      default:  ;
+      default:;
     endcase
   end
 end
