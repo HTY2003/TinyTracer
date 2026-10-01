@@ -125,8 +125,8 @@ assign sram_rd            = ( (state_r == STATE_OBJ1) ||
 
 // Macro-op interface wires
 // TODO: Add entries for more states
-assign req_valid          = req_ready && (state_r == STATE_SUR);
-assign resp_ready         = req_valid;
+assign req_valid          = state_r == STATE_SUR;
+assign resp_ready         = '1;
 
 always_comb begin
   case (state_r)
