@@ -108,13 +108,13 @@ assign tmp1               = {8'b0, tmp1_red, 8'b0, tmp1_grn, 8'b0, tmp1_blu};
 assign tmp2               = {8'b0, tmp2_red, 8'b0, tmp2_grn, 8'b0, tmp2_blu};
 assign tmp1_p1            = {7'b0, tmp1_red_p1, 7'b0, tmp1_grn_p1, 7'b0, tmp1_blu_p1};
 
-// Outputs
+// Output wires
 assign material           = scratch_r[25:24];
 assign sample             = scratch_r[35:0];
 assign path_end           = state_r == STATE_END_SAMP;
 assign done               = state_r == STATE_END_SUR || state_r == STATE_END_SAMP;
 
-// SRAM reads
+// SRAM read wires
 // TODO: Check assumption that addr does not matter once rd has been pulsed
 assign sram_addr          = hit_addr + (state_r == STATE_OBJ3 ? 2 :
                                         state_r == STATE_OBJ2 ? 1 :
@@ -123,7 +123,7 @@ assign sram_rd            = ( (state_r == STATE_OBJ1) ||
                               (state_r == STATE_OBJ2) ||
                               (state_r == STATE_OBJ3) );
 
-// Macro-op
+// Macro-op interface wires
 // TODO: Add entries for more states
 assign req_valid          = req_ready && (state_r == STATE_SUR);
 assign resp_ready         = req_valid;
