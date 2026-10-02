@@ -189,7 +189,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         end
       end
       STATE_SKY1W: begin
-        state_r <= STATE_SKY1W
+        state_r <= STATE_SKY1W;
         if(resp_valid) begin
           state_r <= STATE_SKY2;
         end
@@ -201,7 +201,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         end
       end
       STATE_SKY2W: begin
-        state_r <= STATE_SKY2W
+        state_r <= STATE_SKY2W;
         if(resp_valid) begin
           state_r <= STATE_SKY3;
         end
@@ -213,7 +213,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         end
       end
       STATE_SKY3W: begin
-        state_r <= STATE_SKY3W
+        state_r <= STATE_SKY3W;
         if(resp_valid) begin
           state_r <= STATE_SKY4;
         end
@@ -225,7 +225,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         end
       end
       STATE_SKY4W: begin
-        state_r <= STATE_SKY4W
+        state_r <= STATE_SKY4W;
         if(resp_valid) begin
           state_r <= STATE_END_SAMP;
         end
