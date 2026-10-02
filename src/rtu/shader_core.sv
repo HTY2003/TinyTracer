@@ -183,49 +183,41 @@ always_ff @(posedge clk or negedge rst_n) begin
       STATE_END_SAMP:               state_r <= STATE_IDLE;
       //SKY_STATE starts here
       STATE_SKY1: begin
-        state_r <= STATE_SKY1;
         if(req_ready) begin
           state_r <= STATE_SKY1W;
         end
       end
       STATE_SKY1W: begin
-        state_r <= STATE_SKY1W;
         if(resp_valid) begin
           state_r <= STATE_SKY2;
         end
       end
       STATE_SKY2: begin
-        state_r <= STATE_SKY2;
         if(req_ready) begin
           state_r <= STATE_SKY2W;
         end
       end
       STATE_SKY2W: begin
-        state_r <= STATE_SKY2W;
         if(resp_valid) begin
           state_r <= STATE_SKY3;
         end
       end
       STATE_SKY3: begin
-        state_r <= STATE_SKY2;
         if(req_ready) begin
           state_r <= STATE_SKY3W;
         end
       end
       STATE_SKY3W: begin
-        state_r <= STATE_SKY3W;
         if(resp_valid) begin
           state_r <= STATE_SKY4;
         end
       end
       STATE_SKY4: begin
-        state_r <= STATE_SKY4;
         if(req_ready) begin
           state_r <= STATE_SKY4W;
         end
       end
       STATE_SKY4W: begin
-        state_r <= STATE_SKY4W;
         if(resp_valid) begin
           state_r <= STATE_END_SAMP;
         end
