@@ -132,8 +132,8 @@ assign sram_rd            = ( (state_r == STATE_OBJ1) ||
 
 // Macro-op interface wires
 // TODO: Add entries for more states
-assign req_valid          = state_r == STATE_SUR;
-assign resp_ready         = '1;
+assign req_valid          = (state_r == STATE_SKY1) || (state_r == STATE_SKY2) || (state_r == STATE_SKY3) || (state_r == STATE_SKY4) || (state_r == STATE_GLO1) || (state_r == STATE_GLO2) || (state_r == STATE_SUR);
+assign resp_ready = (state_r == STATE_SKY1W) || (state_r == STATE_SKY2W) || (state_r == STATE_SKY3W) || (state_r == STATE_SKY4W) || (state_r == STATE_GLO1W) || (state_r == STATE_GLO2W) || (state_r == STATE_SURW);
 
 always_comb begin
   case (state_r)
@@ -183,42 +183,42 @@ always_ff @(posedge clk or negedge rst_n) begin
       STATE_END_SAMP:               state_r <= STATE_IDLE;
       //SKY_STATE starts here
       STATE_SKY1: begin
-        if(req_ready) begin
+        if(req_valid && req_ready) begin
           state_r <= STATE_SKY1W;
         end
       end
       STATE_SKY1W: begin
-        if(resp_valid) begin
+        if(resp_valid && resp_ready) begin
           state_r <= STATE_SKY2;
         end
       end
       STATE_SKY2: begin
-        if(req_ready) begin
+        if(req_valid && req_ready) begin
           state_r <= STATE_SKY2W;
         end
       end
       STATE_SKY2W: begin
-        if(resp_valid) begin
+        if(resp_valid && resp_ready) begin
           state_r <= STATE_SKY3;
         end
       end
       STATE_SKY3: begin
-        if(req_ready) begin
+        if(req_valid && req_ready) begin
           state_r <= STATE_SKY3W;
         end
       end
       STATE_SKY3W: begin
-        if(resp_valid) begin
+        if(resp_valid && resp_ready) begin
           state_r <= STATE_SKY4;
         end
       end
       STATE_SKY4: begin
-        if(req_ready) begin
+        if(req_valid && req_ready) begin
           state_r <= STATE_SKY4W;
         end
       end
       STATE_SKY4W: begin
-        if(resp_valid) begin
+        if(resp_valid && resp_ready) begin
           state_r <= STATE_END_SAMP;
         end
       end
