@@ -76,8 +76,8 @@ state_t                   state_r;
 logic [SCRATCH_BITS-1:0]  scratch_r;
 logic [23:0]              att_r;
 // wires
-logic                     obj1_to_glo;
 logic                     obj1_to_zro;
+logic                     obj3_to_glo;
 logic [23:0]              idle_gnd_col_ns;
 logic [23:0]              sur_att_ns;
 logic [7:0]               tmp1_red;
@@ -94,8 +94,8 @@ logic [47:0]              tmp2;
 logic [47:0]              tmp1_p1;
 
 // State transition wires
-assign obj1_to_glo        = &sram_data[1:0];
-assign obj1_to_zro        = last_bounce;
+assign obj1_to_zro        = ~&sram_data[1:0] & last_bounce;
+assign obj3_to_glo        = &scratch_r[25:24];
 
 // Next-state wires
 assign idle_gnd_col_ns    = (ray_origin[9] ^ ray_origin[25]) ? ground_a : ground_b;
@@ -161,17 +161,22 @@ always_ff @(posedge clk or negedge rst_n) begin
 
       STATE_OBJ1:   state_r <= STATE_OBJ1W;
       STATE_OBJ1W:
-        casez ({sram_valid, obj1_to_glo, obj1_to_zro})
-          3'b11?: state_r <= STATE_GLO1;            // Glow sample
-          3'b101: state_r <= STATE_END_SAMP;        // Zero sample
-          3'b100: state_r <= STATE_OBJ2;            // Object surface
+        case ({sram_valid, obj1_to_zro})
+          2'b11:    state_r <= STATE_END_SAMP;      // Zero sample
+          2'b10:    state_r <= STATE_OBJ2;          // Object surface or glow sample
           default:;
         endcase
 
       STATE_OBJ2:                   state_r <= STATE_OBJ2W;
       STATE_OBJ2W:  if (sram_valid) state_r <= STATE_OBJ3;
       STATE_OBJ3:                   state_r <= STATE_OBJ3W;
-      STATE_OBJ3W:  if (sram_valid) state_r <= STATE_SUR;
+      STATE_OBJ3W: 
+        case ({sram_valid, obj3_to_glo})
+          2'b11:    state_r <= STATE_GLO1;          // Glow sample
+          2'b10:    state_r <= STATE_SUR;           // Object surface
+          default:;
+        endcase
+
       STATE_SUR:    if (req_ready)  state_r <= STATE_SURW;
       STATE_SURW:   if (resp_valid) state_r <= STATE_END_SUR;
       STATE_END_SUR:                state_r <= STATE_IDLE;
@@ -197,13 +202,13 @@ always_ff @(posedge clk or negedge rst_n) begin
         endcase
 
       STATE_OBJ1W:
-        case ({sram_valid, obj1_to_glo, obj1_to_zro})
-          3'b101:   scratch_r[35:0]   <= '0;                        // Zero sample
-          default:  scratch_r[39:24]  <= sram_data[15:0];           // Object surface (read w2)
+        case ({sram_valid, obj1_to_zro})
+          2'b11:    scratch_r[35:0]   <= '0;                        // Zero sample
+          default:  scratch_r[39:24]  <= sram_data[15:0];           // Read W2
         endcase
 
-      STATE_OBJ2W:  scratch_r[23:8]   <= sram_data[15:0];           // Object surface (read w1)
-      STATE_OBJ3W:  scratch_r[7:0]    <= sram_data[15:8];           // Object surface (read w0)
+      STATE_OBJ2W:  scratch_r[23:8]   <= sram_data[15:0];           // Read W1
+      STATE_OBJ3W:  scratch_r[7:0]    <= sram_data[15:8];           // Read W0
       default:;
     endcase
   end
