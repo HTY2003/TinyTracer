@@ -44,6 +44,10 @@ module shader_core #(
 
 localparam SCRATCH_BITS     = 40;
 localparam STATE_BITS       = 5;
+localparam M_VMUL           = 5'b10011;
+localparam M_VADD           = 5'b00000;
+localparam M_VSUB           = 5'b00001;
+localparam M_SCAL_VEC       = 5'b01110;
 
 typedef enum logic [STATE_BITS-1:0] {
     STATE_IDLE      ,
@@ -76,92 +80,93 @@ state_t                   state_r;
 logic [SCRATCH_BITS-1:0]  scratch_r;
 logic [23:0]              att_r;
 // wires
+logic [23:0]              tmp;
+logic [8:0]               tmp_p1_red;
+logic [8:0]               tmp_p1_grn;
+logic [8:0]               tmp_p1_blu;
+logic [3*WLEN-1:0]        tmp_p1;
+logic [3*WLEN-1:0]        col_p1_in;
+logic [3*WLEN-1:0]        att_p1_in;
+logic [3*WLEN-1:0]        att_in;
+logic [3*WLEN-1:0]        sky_top_in;
+logic [3*WLEN-1:0]        sky_hor_in;
+logic [WLEN-1:0]          dz;
+logic [3*WLEN-1:0]        dz_in;
+logic [3*WLEN-1:0]        sky_ext_in;
+logic [23:0]              sur_res;
+logic [26:0]              sky123w_res;
+logic [35:0]              sky4w_res;
+logic [23:0]              gnd_col;
 logic                     obj1_to_zro;
 logic                     obj3_to_glo;
-logic [23:0]              idle_gnd_col_ns;
-logic [23:0]              sur_att_ns;
-logic [7:0]               tmp1_red;
-logic [7:0]               tmp1_grn;
-logic [7:0]               tmp1_blu;
-logic [7:0]               tmp2_red;
-logic [7:0]               tmp2_grn;
-logic [7:0]               tmp2_blu;
-logic [8:0]               tmp1_red_p1;
-logic [8:0]               tmp1_grn_p1;
-logic [8:0]               tmp1_blu_p1;
-logic [47:0]              tmp1;
-logic [47:0]              tmp2;
-logic [47:0]              tmp1_p1;
-//sky wire
-logic [15:0]              D_z;
-logic [47:0]              sky_top_48;
-logic [47:0]              sky_horizon_48;
-logic [47:0]              D_z_48 ;
-logic [47:0]              sky_ext;
+
+// Macro-op operand wires
+assign tmp                = (state_r == STATE_SUR) ? scratch_r[23:0] : att_r;
+assign tmp_p1_red         = tmp[23:16] + 1;
+assign tmp_p1_grn         = tmp[15:8]  + 1;
+assign tmp_p1_blu         = tmp[7:0]   + 1;
+assign tmp_p1             = {7'b0, tmp_p1_red,          7'b0, tmp_p1_grn,         7'b0, tmp_p1_blu};
+assign col_p1_in          = tmp_p1;
+assign att_p1_in          = tmp_p1;
+assign att_in             = {8'b0, att_r[23:16],        8'b0, att_r[15:8],        8'b0, att_r[7:0]};
+assign sky_top_in         = {8'b0, sky_top[23:16],      8'b0, sky_top[15:8],      8'b0, sky_top[7:0]};
+assign sky_hor_in         = {8'b0, sky_horizon[23:16],  8'b0, sky_horizon[15:8],  8'b0, sky_horizon[7:0]};
+assign dz                 = ray_dir[47] ? 16'b0 : ray_dir[47:32];
+assign dz_in              = {3{dz}};
+assign sky_ext_in         = { {7{scratch_r[26]}}, scratch_r[26:18], // Red
+                              {7{scratch_r[17]}}, scratch_r[17:9],  // Green
+                              {7{scratch_r[8]}},  scratch_r[8:0] }; // Blue
+
+// Macro-op result wires
+assign sur_res            = {resp_result[40:33], resp_result[24:17], resp_result[8:1]};
+assign sky123w_res        = {resp_result[40:32], resp_result[24:16], resp_result[8:0]};
+assign sky4w_res          = {4'b0, resp_result[40:33], 4'b0, resp_result[24:17], 4'b0, resp_result[8:1]};
+
+// Miscellaneous next-state wires
+assign gnd_col            = (ray_origin[9] ^ ray_origin[25]) ? ground_a : ground_b;
+
 // State transition wires
 assign obj1_to_zro        = ~&sram_data[1:0] & last_bounce;
 assign obj3_to_glo        = &scratch_r[25:24];
-
-// Next-state wires
-assign idle_gnd_col_ns    = (ray_origin[9] ^ ray_origin[25]) ? ground_a : ground_b;
-assign sur_att_ns         = {resp_result[40:33], resp_result[24:17], resp_result[8:1]};
-
-// Macro-op operand wires
-assign tmp1_red           = (state_r == STATE_SUR) ? scratch_r[23:16] : att_r[23:16];
-assign tmp1_grn           = (state_r == STATE_SUR) ? scratch_r[15:8]  : att_r[15:8];
-assign tmp1_blu           = (state_r == STATE_SUR) ? scratch_r[7:0]   : att_r[7:0];
-assign tmp2_red           = (state_r == STATE_SUR) ? att_r[23:16] : scratch_r[23:16];
-assign tmp2_grn           = (state_r == STATE_SUR) ? att_r[15:8]  : scratch_r[15:8];
-assign tmp2_blu           = (state_r == STATE_SUR) ? att_r[7:0]   : scratch_r[7:0];
-assign tmp1_red_p1        = tmp1_red + 1;
-assign tmp1_grn_p1        = tmp1_grn + 1;
-assign tmp1_blu_p1        = tmp1_blu + 1;
-assign tmp1               = {8'b0, tmp1_red, 8'b0, tmp1_grn, 8'b0, tmp1_blu};
-assign tmp2               = {8'b0, tmp2_red, 8'b0, tmp2_grn, 8'b0, tmp2_blu};
-assign tmp1_p1            = {7'b0, tmp1_red_p1, 7'b0, tmp1_grn_p1, 7'b0, tmp1_blu_p1};
-//sky assignment
-assign D_z                = ray_dir[47]? 16'b0 : ray_dir[47:32];
-assign sky_top_48         = {8'b0, sky_top[7:0], 8'b0, sky_top[15:8], 8'b0, sky_top[23:16]};
-assign sky_horizon_48     = {8'b0, sky_horizon[7:0], 8'b0, sky_horizon[15:8], 8'b0, sky_horizon[23:16]};
-assign D_z_48             = {D_z, D_z, D_z};
-// Output wires
-assign material           = scratch_r[25:24];
-assign sample             = scratch_r[35:0];
-assign path_end           = state_r == STATE_END_SAMP;
-assign done               = state_r == STATE_END_SUR || state_r == STATE_END_SAMP;
 
 // SRAM read wires
 // TODO: Check assumption that addr does not matter once rd has been pulsed
 assign sram_addr          = hit_addr + (state_r == STATE_OBJ1 ? 2 :
                                         state_r == STATE_OBJ2 ? 1 :
                                                                 0);
-assign sram_rd            = ( (state_r == STATE_OBJ1) ||
-                              (state_r == STATE_OBJ2) ||
-                              (state_r == STATE_OBJ3) );
-assign sky_ext = {
-  {7{scratch_r[26]}}, scratch_r[26:18], // Blue
-  {7{scratch_r[17]}}, scratch_r[17:9],  // Green
-  {7{scratch_r[8]}},  scratch_r[8:0]    // Red
-};
-// Macro-op interface wires
-// TODO: Add entries for more states
+assign sram_rd            = (state_r == STATE_OBJ1) ||
+                            (state_r == STATE_OBJ2) ||
+                            (state_r == STATE_OBJ3) ;
 
-assign req_valid          = (state_r == STATE_SKY1) || (state_r == STATE_SKY2) || (state_r == STATE_SKY3) || (state_r == STATE_SKY4) || (state_r == STATE_GLO1) || (state_r == STATE_GLO2) || (state_r == STATE_SUR);
-assign resp_ready = (state_r == STATE_SKY1W) || (state_r == STATE_SKY2W) || (state_r == STATE_SKY3W) || (state_r == STATE_SKY4W) || (state_r == STATE_GLO1W) || (state_r == STATE_GLO2W) || (state_r == STATE_SURW);
+// Macro-op interface wires
+assign req_valid          = (state_r == STATE_SKY1) ||
+                            (state_r == STATE_SKY2) ||
+                            (state_r == STATE_SKY3) ||
+                            (state_r == STATE_SKY4) ||
+                            (state_r == STATE_GLO1) ||
+                            (state_r == STATE_GLO2) ||
+                            (state_r == STATE_SUR)  ;
+assign resp_ready         = '1;
+
+// Output wires
+assign material           = scratch_r[25:24];
+assign sample             = scratch_r[35:0];
+assign path_end           = state_r == STATE_END_SAMP;
+assign done               = state_r == STATE_END_SUR || state_r == STATE_END_SAMP;
+
 always_comb begin
   case (state_r)
-    STATE_SUR: req_op = {1'b0, tmp1_p1, tmp2, 5'b10011};
-    //TODO add definition for the missing op code def
-    STATE_SKY1:  req_op = {1'b0, sky_top_48, sky_horizon_48, M_VSUB};
-    STATE_SKY2:  req_op = {1'b1, D_z_48, sky_ext, M_SCAL_VEC};
-    STATE_SKY3:  req_op = {1'b0, sky_horizon_48, sky_ext, M_VADD};
-    STATE_SKY4:  req_op = {1'b0, tmp1_p1, sky_ext, M_VMUL};
-    default:   req_op = 'x;
+    //TODO: If there is a global .sv file for opcode params, use those instead of localparams
+    STATE_SUR:    req_op = {1'b0, col_p1_in,  att_in,     M_VMUL};
+    STATE_SKY1:   req_op = {1'b0, sky_top_in, sky_hor_in, M_VSUB};
+    STATE_SKY2:   req_op = {1'b1, dz_in,      sky_ext_in, M_SCAL_VEC};
+    STATE_SKY3:   req_op = {1'b0, sky_hor_in, sky_ext_in, M_VADD};
+    STATE_SKY4:   req_op = {1'b0, att_p1_in,  sky_ext_in, M_VMUL};
+    default:      req_op = 'x;
   endcase
 end
 
 // State register
-// TODO: Add entries for more states
 always_ff @(posedge clk or negedge rst_n) begin
   if (~rst_n) begin
     state_r <= STATE_IDLE;
@@ -197,56 +202,22 @@ always_ff @(posedge clk or negedge rst_n) begin
 
       STATE_SUR:    if (req_ready)  state_r <= STATE_SURW;
       STATE_SURW:   if (resp_valid) state_r <= STATE_END_SUR;
+      STATE_SKY1:   if (req_ready)  state_r <= STATE_SKY1W;
+      STATE_SKY1W:  if (resp_valid) state_r <= STATE_SKY2;
+      STATE_SKY2:   if (req_ready)  state_r <= STATE_SKY2W;
+      STATE_SKY2W:  if (resp_valid) state_r <= STATE_SKY3;
+      STATE_SKY3:   if (req_ready)  state_r <= STATE_SKY3W;
+      STATE_SKY3W:  if (resp_valid) state_r <= STATE_SKY4;
+      STATE_SKY4:   if (req_ready)  state_r <= STATE_SKY4W;
+      STATE_SKY4W:  if (resp_valid) state_r <= STATE_END_SAMP;
       STATE_END_SUR:                state_r <= STATE_IDLE;
       STATE_END_SAMP:               state_r <= STATE_IDLE;
-      //SKY_STATE starts here
-      STATE_SKY1: begin
-        if(req_valid && req_ready) begin
-          state_r <= STATE_SKY1W;
-        end
-      end
-      STATE_SKY1W: begin
-        if(resp_valid && resp_ready) begin
-          state_r <= STATE_SKY2;
-        end
-      end
-      STATE_SKY2: begin
-        if(req_valid && req_ready) begin
-          state_r <= STATE_SKY2W;
-        end
-      end
-      STATE_SKY2W: begin
-        if(resp_valid && resp_ready) begin
-          state_r <= STATE_SKY3;
-        end
-      end
-      STATE_SKY3: begin
-        if(req_valid && req_ready) begin
-          state_r <= STATE_SKY3W;
-        end
-      end
-      STATE_SKY3W: begin
-        if(resp_valid && resp_ready) begin
-          state_r <= STATE_SKY4;
-        end
-      end
-      STATE_SKY4: begin
-        if(req_valid && req_ready) begin
-          state_r <= STATE_SKY4W;
-        end
-      end
-      STATE_SKY4W: begin
-        if(resp_valid && resp_ready) begin
-          state_r <= STATE_END_SAMP;
-        end
-      end
       default:;
     endcase
   end
 end
 
 // Scratch register
-// TODO: Add entries for more states
 always_ff @(posedge clk or negedge rst_n) begin
   if (~rst_n) begin
     scratch_r <= '0;
@@ -255,33 +226,29 @@ always_ff @(posedge clk or negedge rst_n) begin
     case (state_r)
       STATE_IDLE:
         casez ({start, hit, hit_ground, last_bounce})
-          4'b1111:  scratch_r[35:0]   <= '0;                        // Zero sample
-          4'b1110:  scratch_r[25:0]   <= {2'b00, idle_gnd_col_ns};  // Ground surface
+          4'b1111:  scratch_r[35:0]   <= '0;                  // Zero sample
+          4'b1110:  scratch_r[25:0]   <= {2'b00, gnd_col};    // Ground surface
           default:;
         endcase
 
       STATE_OBJ1W:
         case ({sram_valid, obj1_to_zro})
-          2'b11:    scratch_r[35:0]   <= '0;                        // Zero sample
-          default:  scratch_r[39:24]  <= sram_data[15:0];           // Read W2
+          2'b11:    scratch_r[35:0]   <= '0;                  // Zero sample
+          default:  scratch_r[39:24]  <= sram_data[15:0];     // Read W2
         endcase
 
-      STATE_OBJ2W:  scratch_r[23:8]   <= sram_data[15:0];           // Read W1
-      STATE_OBJ3W:  scratch_r[7:0]    <= sram_data[15:8];           // Read W0
-      STATE_SKY1:;
-      STATE_SKY1W:  scratch_r[26:0] <= {resp_result[40:32], resp_result[24:16], resp_result[8:0]};
-      STATE_SKY2:;
-      STATE_SKY2W:  scratch_r[26:0] <= {resp_result[40:32], resp_result[24:16], resp_result[8:0]};
-      STATE_SKY3:;
-      STATE_SKY3W:  scratch_r[26:0] <= {resp_result[40:32], resp_result[24:16], resp_result[8:0]};
-      STATE_SKY4W:  scratch_r[35:0] <= {4'b0, resp_result[8:1], 4'b0, resp_result[24:17], 4'b0, resp_result[40:33]};
+      STATE_OBJ2W:  scratch_r[23:8]   <= sram_data[15:0];     // Read W1
+      STATE_OBJ3W:  scratch_r[7:0]    <= sram_data[15:8];     // Read W0
+      STATE_SKY1W:  scratch_r[26:0]   <= sky123w_res;
+      STATE_SKY2W:  scratch_r[26:0]   <= sky123w_res;
+      STATE_SKY3W:  scratch_r[26:0]   <= sky123w_res;        
+      STATE_SKY4W:  scratch_r[35:0]   <= sky4w_res;
       default:;
     endcase
   end
 end
 
 // Attenuation register
-// TODO: Add entries for more states
 always_ff @(posedge clk or negedge rst_n) begin
   if (~rst_n) begin
     att_r <= '1;
@@ -289,7 +256,7 @@ always_ff @(posedge clk or negedge rst_n) begin
   else begin
     case (state_r)
       STATE_IDLE: if (start & new_sample) att_r <= '1;
-      STATE_SURW: if (resp_valid)         att_r <= sur_att_ns;
+      STATE_SURW: if (resp_valid)         att_r <= sur_res;
       default:;
     endcase
   end
