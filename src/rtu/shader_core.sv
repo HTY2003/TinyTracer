@@ -92,7 +92,11 @@ logic [8:0]               tmp1_blu_p1;
 logic [47:0]              tmp1;
 logic [47:0]              tmp2;
 logic [47:0]              tmp1_p1;
-
+//sky wire
+logic [15:0]              D_z;
+logic [47:0]              sky_top_48;
+logic [47:0]              sky_horizon_48;
+logic [47:0]              D_z_48 ;
 // State transition wires
 assign obj1_to_zro        = ~&sram_data[1:0] & last_bounce;
 assign obj3_to_glo        = &scratch_r[25:24];
@@ -114,7 +118,11 @@ assign tmp1_blu_p1        = tmp1_blu + 1;
 assign tmp1               = {8'b0, tmp1_red, 8'b0, tmp1_grn, 8'b0, tmp1_blu};
 assign tmp2               = {8'b0, tmp2_red, 8'b0, tmp2_grn, 8'b0, tmp2_blu};
 assign tmp1_p1            = {7'b0, tmp1_red_p1, 7'b0, tmp1_grn_p1, 7'b0, tmp1_blu_p1};
-
+//sky assignment
+assign D_z                = ray_dir[47]? 16'b0 : ray_dir[47:32];
+assign sky_top_48         = {8'b0, sky_top[7:0], 8'b0, sky_top[15:8], 8'b0, sky_top[23:16]};
+assign sky_horizon_48     = {8'b0, sky_horizon[7:0], 8'b0, sky_horizon[15:8], 8'b0, sky_horizon[23:16]};
+assign D_z_48             = {D_z, D_z, D_z};
 // Output wires
 assign material           = scratch_r[25:24];
 assign sample             = scratch_r[35:0];
@@ -129,15 +137,24 @@ assign sram_addr          = hit_addr + (state_r == STATE_OBJ1 ? 2 :
 assign sram_rd            = ( (state_r == STATE_OBJ1) ||
                               (state_r == STATE_OBJ2) ||
                               (state_r == STATE_OBJ3) );
-
+logic [47:0] sky_ext = {
+  {7{scratch_r[26]}}, scratch_r[26:18], // Blue
+  {7{scratch_r[17]}}, scratch_r[17:9],  // Green
+  {7{scratch_r[8]}},  scratch_r[8:0]    // Red
+};
 // Macro-op interface wires
 // TODO: Add entries for more states
+
 assign req_valid          = (state_r == STATE_SKY1) || (state_r == STATE_SKY2) || (state_r == STATE_SKY3) || (state_r == STATE_SKY4) || (state_r == STATE_GLO1) || (state_r == STATE_GLO2) || (state_r == STATE_SUR);
 assign resp_ready = (state_r == STATE_SKY1W) || (state_r == STATE_SKY2W) || (state_r == STATE_SKY3W) || (state_r == STATE_SKY4W) || (state_r == STATE_GLO1W) || (state_r == STATE_GLO2W) || (state_r == STATE_SURW);
-
 always_comb begin
   case (state_r)
     STATE_SUR: req_op = {1'b0, tmp1_p1, tmp2, 5'b10011};
+    //TODO add definition for the missing op code def
+    STATE_SKY1:  req_op = {1'b0, sky_top_48, sky_horizon_48, M_VSUB};
+    STATE_SKY2:  req_op = {1'b1, D_z_48, sky_ext, M_SCAL_VEC};
+    STATE_SKY3:  req_op = {1'b0, sky_horizon_48, sky_ext, M_VADD};
+    STATE_SKY4:  req_op = {1'b0, tmp1_p1, sky_ext, M_VMUL};
     default:   req_op = 'x;
   endcase
 end
@@ -250,6 +267,13 @@ always_ff @(posedge clk or negedge rst_n) begin
 
       STATE_OBJ2W:  scratch_r[23:8]   <= sram_data[15:0];           // Read W1
       STATE_OBJ3W:  scratch_r[7:0]    <= sram_data[15:8];           // Read W0
+      STATE_SKY1:;
+      STATE_SKY1W:  scratch_r[26:0] <= {resp_result[40:32], resp_result[24:16], resp_result[8:0]};
+      STATE_SKY2:;
+      STATE_SKY2W:  scratch_r[26:0] <= {resp_result[40:32], resp_result[24:16], resp_result[8:0]};
+      STATE_SKY3:;
+      STATE_SKY3W:  scratch_r[26:0] <= {resp_result[40:32], resp_result[24:16], resp_result[8:0]};
+      STATE_SKY4W:  scratch_r[35:0] <= {4'b0, resp_result[8:1], 4'b0, resp_result[24:17], 4'b0, resp_result[40:33]};
       default:;
     endcase
   end
