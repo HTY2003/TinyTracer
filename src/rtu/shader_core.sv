@@ -97,6 +97,7 @@ logic [15:0]              D_z;
 logic [47:0]              sky_top_48;
 logic [47:0]              sky_horizon_48;
 logic [47:0]              D_z_48 ;
+logic [47:0]              sky_ext;
 // State transition wires
 assign obj1_to_zro        = ~&sram_data[1:0] & last_bounce;
 assign obj3_to_glo        = &scratch_r[25:24];
@@ -137,7 +138,7 @@ assign sram_addr          = hit_addr + (state_r == STATE_OBJ1 ? 2 :
 assign sram_rd            = ( (state_r == STATE_OBJ1) ||
                               (state_r == STATE_OBJ2) ||
                               (state_r == STATE_OBJ3) );
-logic [47:0] sky_ext = {
+assign sky_ext = {
   {7{scratch_r[26]}}, scratch_r[26:18], // Blue
   {7{scratch_r[17]}}, scratch_r[17:9],  // Green
   {7{scratch_r[8]}},  scratch_r[8:0]    // Red
