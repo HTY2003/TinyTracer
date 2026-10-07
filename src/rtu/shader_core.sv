@@ -99,12 +99,18 @@ logic [35:0]              sky4w_res;
 logic [23:0]              gnd_col;
 logic                     obj1_to_zro;
 logic                     obj3_to_glo;
+logic [47:0]              c;
+logic [47:0]              strength;
+logic [23:0]              glow1w_res;
+logic [35:0]              glow2w_res;
 
 // Macro-op operand wires
 assign tmp                = (state_r == STATE_SUR) ? scratch_r[23:0] : att_r;
-assign tmp_p1_red         = tmp[23:16] + 1;
-assign tmp_p1_grn         = tmp[15:8]  + 1;
-assign tmp_p1_blu         = tmp[7:0]   + 1;
+assign c                  = {8'b0, scratch_r[23:16],    8'b0, scratch_r[15:8],    8'b0, scratch_r[7:0]};           
+assign strength           = {2'b00, scratch_r[39:26], 2'b00, scratch_r[39:26], 2'b00, scratch_r[39:26]};
+assign tmp_p1_red         = {1'b0, tmp[23:16]} + 9'd1;
+assign tmp_p1_grn         = {1'b0, tmp[15:8]}  + 9'd1;
+assign tmp_p1_blu         = {1'b0, tmp[7:0]}   + 9'd1;
 assign tmp_p1             = {7'b0, tmp_p1_red,          7'b0, tmp_p1_grn,         7'b0, tmp_p1_blu};
 assign col_p1_in          = tmp_p1;
 assign att_p1_in          = tmp_p1;
@@ -121,6 +127,9 @@ assign sky_ext_in         = { {7{scratch_r[26]}}, scratch_r[26:18], // Red
 assign sur_res            = {resp_result[40:33], resp_result[24:17], resp_result[8:1]};
 assign sky123w_res        = {resp_result[40:32], resp_result[24:16], resp_result[8:0]};
 assign sky4w_res          = {4'b0, resp_result[40:33], 4'b0, resp_result[24:17], 4'b0, resp_result[8:1]};
+assign glow1w_res         = {resp_result[40:33], resp_result[24:17], resp_result[8:1]};
+assign glow2w_res         = {resp_result[46:35], resp_result[30:19], resp_result[14:3]};
+
 
 // Miscellaneous next-state wires
 assign gnd_col            = (ray_origin[9] ^ ray_origin[25]) ? ground_a : ground_b;
@@ -162,6 +171,8 @@ always_comb begin
     STATE_SKY2:   req_op = {1'b1, dz_in,      sky_ext_in, M_SCAL_VEC};
     STATE_SKY3:   req_op = {1'b0, sky_hor_in, sky_ext_in, M_VADD};
     STATE_SKY4:   req_op = {1'b0, att_p1_in,  sky_ext_in, M_VMUL};
+    STATE_GLO1:   req_op = {1'b0, tmp_p1,     c         , M_VMUL};
+    STATE_GLO2:   req_op = {1'b0, strength,   c         , M_VMUL};
     default:      req_op = 'x;
   endcase
 end
@@ -210,6 +221,10 @@ always_ff @(posedge clk or negedge rst_n) begin
       STATE_SKY3W:  if (resp_valid) state_r <= STATE_SKY4;
       STATE_SKY4:   if (req_ready)  state_r <= STATE_SKY4W;
       STATE_SKY4W:  if (resp_valid) state_r <= STATE_END_SAMP;
+      STATE_GLO1:   if (req_ready)  state_r <= STATE_GLO1W;
+      STATE_GLO1W:  if (resp_valid) state_r <= STATE_GLO2;
+      STATE_GLO2:   if (req_ready)  state_r <= STATE_GLO2W;
+      STATE_GLO2W:  if (resp_valid) state_r <= STATE_END_SAMP;
       STATE_END_SUR:                state_r <= STATE_IDLE;
       STATE_END_SAMP:               state_r <= STATE_IDLE;
       default:;
@@ -243,6 +258,8 @@ always_ff @(posedge clk or negedge rst_n) begin
       STATE_SKY2W:  scratch_r[26:0]   <= sky123w_res;
       STATE_SKY3W:  scratch_r[26:0]   <= sky123w_res;        
       STATE_SKY4W:  scratch_r[35:0]   <= sky4w_res;
+      STATE_GLO1W:  scratch_r[23:0]   <= glow1w_res;
+      STATE_GLO2W:  scratch_r[35:0]   <= glow2w_res;
       default:;
     endcase
   end
