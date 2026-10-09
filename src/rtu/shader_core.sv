@@ -51,7 +51,6 @@ localparam M_SCAL_VEC       = 5'b01110;
 
 typedef enum logic [STATE_BITS-1:0] {
     STATE_IDLE      ,
-    STATE_OBJ1      ,
     STATE_OBJ1W     ,
     STATE_OBJ2      ,
     STATE_OBJ2W     ,
@@ -104,7 +103,11 @@ logic [23:0]              gnd_col;
 logic                     obj1_to_zro;
 logic                     obj3_to_glo;
 
-
+// --- ASSUMPTIONS ---
+// sram_addr must be held steady until SRAM data is received
+// SRAM read is not pipelined
+// SRAM read cannot be started on a posedge where sram_valid=1
+// no need to hold req_op steady after req handshake is done (at posedge, req_ready=req_valid=1)
 
 // Macro-op operand wires
 assign tmp                = (state_r == STATE_SUR) ? scratch_r[23:0] : att_r;
@@ -141,10 +144,10 @@ assign obj3_to_glo        = &scratch_r[25:24];
 
 // SRAM read wires
 // TODO: Check assumption that addr does not matter once rd has been pulsed
-assign sram_addr          = hit_addr + (state_r == STATE_OBJ1 ? 2 :
-                                        state_r == STATE_OBJ2 ? 1 :
-                                                                0);
-assign sram_rd            = (state_r == STATE_OBJ1) ||
+assign sram_addr          = hit_addr + ((state_r == STATE_IDLE || state_r == STATE_OBJ1W) ? 2 :
+                                        (state_r == STATE_OBJ2 || state_r == STATE_OBJ2W) ? 1 :
+                                                                                            0);
+assign sram_rd            = (state_r == STATE_IDLE && &{start, hit, ~hit_ground}) ||
                             (state_r == STATE_OBJ2) ||
                             (state_r == STATE_OBJ3) ;
 
@@ -188,13 +191,12 @@ always_ff @(posedge clk or negedge rst_n) begin
       STATE_IDLE:
         casez ({start, hit, hit_ground, last_bounce})
           4'b10??:  state_r <= STATE_SKY1;          // Sky sample
-          4'b110?:  state_r <= STATE_OBJ1;          // Object surface
+          4'b110?:  state_r <= STATE_OBJ1W;         // Object surface
           4'b1111:  state_r <= STATE_END_SAMP;      // Zero sample
           4'b1110:  state_r <= STATE_SUR;           // Ground surface
           default:;
         endcase
 
-      STATE_OBJ1:   state_r <= STATE_OBJ1W;
       STATE_OBJ1W:
         case ({sram_valid, obj1_to_zro})
           2'b11:    state_r <= STATE_END_SAMP;      // Zero sample
