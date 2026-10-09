@@ -107,8 +107,9 @@ logic                     obj3_to_glo;
 // -: SRAM read is not pipelined
 // -: sram_addr must be held steady until SRAM data is received
 // -: we cannot pulse sram_rd=1 on the same posedge where we sample sram_valid=1
-// +: no need to hold req_op steady after req handshake is done (at posedge, req_ready=req_valid=1)
 // -: we cannot pulse done=1 on the same posedge where we sample start=1
+// +: no need to hold req_op steady after req handshake is done (posedge where ready=valid=1)
+// +: macro-op req handshake must complete (posedge where ready=valid=1) before resp handshake
 
 // Macro-op operand wires
 assign tmp                = (state_r == STATE_SUR) ? scratch_r[23:0] : att_r;
