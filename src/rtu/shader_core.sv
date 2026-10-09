@@ -70,8 +70,7 @@ typedef enum logic [STATE_BITS-1:0] {
     STATE_GLO1W     ,
     STATE_GLO2      ,
     STATE_GLO2W     ,
-    STATE_END_SAMP  ,
-    STATE_END_SUR
+    STATE_ZERO
 } state_t;
 
 // registers
@@ -145,7 +144,6 @@ assign obj1_to_zro        = ~&sram_data[1:0] & last_bounce;
 assign obj3_to_glo        = &scratch_r[25:24];
 
 // SRAM read wires
-// TODO: Check assumption that addr does not matter once rd has been pulsed
 assign sram_addr          = hit_addr + ((state_r == STATE_IDLE || state_r == STATE_OBJ1W) ? 2 :
                                         (state_r == STATE_OBJ2 || state_r == STATE_OBJ2W) ? 1 :
                                                                                             0);
@@ -165,9 +163,39 @@ assign resp_ready         = '1;
 
 // Output wires
 assign material           = scratch_r[25:24];
-assign sample             = scratch_r[35:0];
-assign path_end           = state_r == STATE_END_SAMP;
-assign done               = state_r == STATE_END_SUR || state_r == STATE_END_SAMP;
+
+assign done               = (state_r == STATE_ZERO)                                 ||
+                            (state_r == STATE_OBJ1W && &{sram_valid, obj1_to_zro})  ||
+                            (state_r == STATE_SKY4W && resp_valid)                  ||
+                            (state_r == STATE_GLO2W && resp_valid)                  ||
+                            (state_r == STATE_SURW  && resp_valid)                  ;
+
+// sometimes, done=1 but scratch_r does not have the correct values yet
+// to produce correct values, we override sample and path_end with combi logic
+// IMPT: only do this if scratch_r cannot be written beforehand
+always_comb begin
+  sample = scratch_r[35:0];
+  case (state_r)
+    STATE_SKY4W:  sample = sky4w_res;
+    STATE_GLO2W:  sample = glo2w_res;
+    // STATE_ZERO:  uses scratch_r value
+    // STATE_OBJ1W: uses scratch_r value
+    // STATE_SURW:  does not output sample
+    default:;
+  endcase
+end
+
+always_comb begin
+  path_end = scratch_r[36];
+  case (state_r)
+    STATE_GLO2W: path_end = 1'b1;
+    // STATE_ZERO:  uses scratch_r value
+    // STATE_OBJ1W: uses scratch_r value
+    // STATE_SKY4W: uses scratch_r value
+    // STATE_SURW:  uses scratch_r value
+    default:;
+  endcase
+end
 
 always_comb begin
   case (state_r)
@@ -193,16 +221,16 @@ always_ff @(posedge clk or negedge rst_n) begin
       STATE_IDLE:
         casez ({start, hit, hit_ground, last_bounce})
           4'b10??:  state_r <= STATE_SKY1;          // Sky sample
-          4'b110?:  state_r <= STATE_OBJ1W;         // Object surface
-          4'b1111:  state_r <= STATE_END_SAMP;      // Zero sample
+          4'b110?:  state_r <= STATE_OBJ1W;         // Zero sample / Glow sample / Object surface
+          4'b1111:  state_r <= STATE_ZERO;          // Zero sample
           4'b1110:  state_r <= STATE_SUR;           // Ground surface
           default:;
         endcase
 
       STATE_OBJ1W:
         case ({sram_valid, obj1_to_zro})
-          2'b11:    state_r <= STATE_END_SAMP;      // Zero sample
-          2'b10:    state_r <= STATE_OBJ2;          // Object surface or glow sample
+          2'b11:    state_r <= STATE_IDLE;          // Zero sample
+          2'b10:    state_r <= STATE_OBJ2;          // Object surface / Glow sample
           default:;
         endcase
 
@@ -217,7 +245,7 @@ always_ff @(posedge clk or negedge rst_n) begin
         endcase
 
       STATE_SUR:    if (req_ready)  state_r <= STATE_SURW;
-      STATE_SURW:   if (resp_valid) state_r <= STATE_END_SUR;
+      STATE_SURW:   if (resp_valid) state_r <= STATE_IDLE;
       STATE_SKY1:   if (req_ready)  state_r <= STATE_SKY1W;
       STATE_SKY1W:  if (resp_valid) state_r <= STATE_SKY2;
       STATE_SKY2:   if (req_ready)  state_r <= STATE_SKY2W;
@@ -225,13 +253,12 @@ always_ff @(posedge clk or negedge rst_n) begin
       STATE_SKY3:   if (req_ready)  state_r <= STATE_SKY3W;
       STATE_SKY3W:  if (resp_valid) state_r <= STATE_SKY4;
       STATE_SKY4:   if (req_ready)  state_r <= STATE_SKY4W;
-      STATE_SKY4W:  if (resp_valid) state_r <= STATE_END_SAMP;
+      STATE_SKY4W:  if (resp_valid) state_r <= STATE_IDLE;
       STATE_GLO1:   if (req_ready)  state_r <= STATE_GLO1W;
       STATE_GLO1W:  if (resp_valid) state_r <= STATE_GLO2;
       STATE_GLO2:   if (req_ready)  state_r <= STATE_GLO2W;
-      STATE_GLO2W:  if (resp_valid) state_r <= STATE_END_SAMP;
-      STATE_END_SUR:                state_r <= STATE_IDLE;
-      STATE_END_SAMP:               state_r <= STATE_IDLE;
+      STATE_GLO2W:  if (resp_valid) state_r <= STATE_IDLE;
+      STATE_ZERO:                   state_r <= STATE_IDLE;
       default:;
     endcase
   end
@@ -246,15 +273,17 @@ always_ff @(posedge clk or negedge rst_n) begin
     case (state_r)
       STATE_IDLE:
         casez ({start, hit, hit_ground, last_bounce})
-          4'b1111:  scratch_r[35:0]   <= '0;                  // Zero sample
+          4'b10??:  scratch_r[36]     <= 1'b1;                // Sky sample
+          4'b110?:  scratch_r[36:0]   <= {1'b1, 36'b0};       // Zero sample / Glow sample / Object surface
+          4'b1111:  scratch_r[36:0]   <= {1'b1, 36'b0};       // Zero sample
           4'b1110:  scratch_r[25:0]   <= {2'b00, gnd_col};    // Ground surface
           default:;
         endcase
 
       STATE_OBJ1W:
         case ({sram_valid, obj1_to_zro})
-          2'b11:    scratch_r[35:0]   <= '0;                  // Zero sample
-          default:  scratch_r[39:24]  <= sram_data[15:0];     // Read W2
+          2'b10:    scratch_r[39:24]  <= sram_data[15:0];     // Read W2 (IMPT: only when -> OBJ2)
+          default:;
         endcase
 
       STATE_OBJ2W:  scratch_r[23:8]   <= sram_data[15:0];     // Read W1
@@ -265,6 +294,7 @@ always_ff @(posedge clk or negedge rst_n) begin
       STATE_SKY4W:  scratch_r[35:0]   <= sky4w_res;
       STATE_GLO1W:  scratch_r[23:0]   <= glo1w_res;
       STATE_GLO2W:  scratch_r[35:0]   <= glo2w_res;
+      STATE_SUR:    scratch_r[36]     <= 1'b0;
       default:;
     endcase
   end
