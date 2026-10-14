@@ -119,7 +119,7 @@ async def test_clkdiv_frequency_115200(dut):
     dut._log.info(f"Expected frequency ratio: {expected_ratio:.6f}")
     dut._log.info(f"Error: {error_percent:.2f}%")
 
-    # 5% is plenty of room for finite sampling
+    # 1% is plenty of room for finite sampling
     assert error_percent < 1.0, (
         f"Frequency error {error_percent:.2f}% exceeds 1% tolerance"
     )
