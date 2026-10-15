@@ -4,6 +4,7 @@
   "//": "merges the two, with these taking precedence, and hardens the result. To do the same by hand,",
   "//": "from the repository root:",
   "//": "jq -s '.[0] * .[1]' src/config.json gds/shader_core/config.json > gds/shader_core/config_merged.json",
+  "//": "mkdir -p runs/shader_core",
   "//": "python -m openlane --dockerized --run-tag shader_core --force-run-dir runs/shader_core gds/shader_core/config_merged.json",
   "//": "Configuration docs: https://openlane2.readthedocs.io/en/latest/reference/configuration.html",
 

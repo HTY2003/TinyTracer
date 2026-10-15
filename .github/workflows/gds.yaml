@@ -37,13 +37,16 @@ jobs:
         shell: bash
         run: jq -s '.[0] * .[1]' src/config.json gds/shader_core/config.json > gds/shader_core/config_merged.json
 
-      # --dockerized pulls the OpenLane image and the sky130A PDK
+      # --dockerized pulls the OpenLane image and the sky130A PDK. --force-run-dir
+      # needs the run directory to exist already (tt_tool.py makes runs/wokwi too).
       - name: Build Shader Core GDS
         shell: bash
-        run: >
-          python -m openlane --pdk-root "$PDK_ROOT" --docker-no-tty --dockerized
-          --run-tag shader_core --force-run-dir runs/shader_core --hide-progress-bar
-          gds/shader_core/config_merged.json
+        run: |
+          rm -rf runs/shader_core
+          mkdir -p runs/shader_core
+          python -m openlane --pdk-root "$PDK_ROOT" --docker-no-tty --dockerized \
+            --run-tag shader_core --force-run-dir runs/shader_core --hide-progress-bar \
+            gds/shader_core/config_merged.json
 
       - name: Summary
         shell: bash
