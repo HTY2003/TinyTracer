@@ -27,11 +27,12 @@ jobs:
         shell: bash
         run: sudo apt-get update && sudo apt-get install -y verilator iverilog
 
+      # The Shader Core on its own (tb_shader_core.sv, test_shader_core.py)
       - name: Run tests
         run: |
           cd test
-          make clean
-          make
+          make clean DUT=shader_core
+          make DUT=shader_core
           # make will return success even if the test fails, so check for failure in the results.xml
           ! grep failure results.xml
 
@@ -47,5 +48,5 @@ jobs:
         with:
           name: test-vcd
           path: |
-            test/tb.vcd
+            test/tb_shader_core.vcd
             test/results.xml

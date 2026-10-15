@@ -5,6 +5,7 @@ runs
 tt_submission
 src/user_config.json
 src/config_merged.json
+gds/shader_core/config_merged.json
 test/sim_build
 test/__pycache__/
 test/results.xml

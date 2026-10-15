@@ -1,0 +1,17 @@
+{
+  "//": "OpenLane 2 settings for hardening the Shader Core on its own (not the Tiny Tapeout top).",
+  "//": "Every other setting comes from src/config.json. Like the Tiny Tapeout flow, .github/workflows/gds.yaml",
+  "//": "merges the two, with these taking precedence, and hardens the result. To do the same by hand,",
+  "//": "from the repository root:",
+  "//": "jq -s '.[0] * .[1]' src/config.json gds/shader_core/config.json > gds/shader_core/config_merged.json",
+  "//": "python -m openlane --dockerized --run-tag shader_core --force-run-dir runs/shader_core gds/shader_core/config_merged.json",
+  "//": "Configuration docs: https://openlane2.readthedocs.io/en/latest/reference/configuration.html",
+
+  "//": "These replace the ones the Tiny Tapeout flow generates from info.yaml (src/user_config.json).",
+  "DESIGN_NAME": "shader_core",
+  "VERILOG_FILES": ["dir::../../src/rtu/shader_core.sv"],
+
+  "//": "Not the Tiny Tapeout tile: the Shader Core has 429 port bits, so the die is sized for its pins",
+  "//": "rather than its cells. Compare the cell area (design__instance__area), not the die area.",
+  "DIE_AREA": "0 0 300 300"
+}

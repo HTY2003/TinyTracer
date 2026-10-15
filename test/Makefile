@@ -5,6 +5,26 @@
 SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
+
+# DUT picks what to test:
+#   shader_core:	tb_shader_core.sv and test_shader_core.py
+#   anything else:  tb.v and test.py
+DUT ?= shader_core
+
+ifeq ($(DUT),shader_core)
+
+ifeq ($(GATES),yes)
+$(error GATES=yes needs DUT=chip: there is no gate-level testbench for the Shader Core)
+endif
+
+SIM_BUILD        = sim_build/shader_core
+VERILOG_SOURCES += $(SRC_DIR)/rtu/shader_core.sv
+VERILOG_SOURCES += $(PWD)/tb_shader_core.sv
+TOPLEVEL         = tb_shader_core
+MODULE           = test_shader_core
+
+else
+
 # tinytracer_pkg.sv and tinytracer_if.sv must stay first: every other file uses them.
 PROJECT_SOURCES += tinytracer_pkg.sv
 PROJECT_SOURCES += tinytracer_if.sv
@@ -53,6 +73,15 @@ VERILOG_SOURCES += $(PWD)/gate_level_netlist.v
 
 endif
 
+# Include the testbench sources:
+VERILOG_SOURCES += $(PWD)/tb.v
+TOPLEVEL = tb
+
+# MODULE is the basename of the Python test file
+MODULE = test
+endif
+
+
 ifeq ($(SIM),verilator)
 # RTL simulation with Verilator: the testbench uses delays and $dumpvars, and
 # lint warnings from unfinished modules must not abort the build.
@@ -61,13 +90,5 @@ endif
 
 # Allow sharing configuration between design and testbench via `include`:
 COMPILE_ARGS 		+= -I$(SRC_DIR)
-
-# Include the testbench sources:
-VERILOG_SOURCES += $(PWD)/tb.v
-TOPLEVEL = tb
-
-# MODULE is the basename of the Python test file
-MODULE = test
-
 # include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim

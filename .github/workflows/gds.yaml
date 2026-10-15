@@ -4,44 +4,67 @@ on:
   push:
   workflow_dispatch:
 
+# Hardens the Shader Core on its own with OpenLane 2 (src/config.json merged with
+# gds/shader_core/config.json), using the OpenLane version and PDK setup of
+# TinyTapeout/tt-gds-action@tt10. The
+# Tiny Tapeout jobs (GDS of tt_um_tinytracer, precheck, gl_test, viewer) need the
+# whole chip, so they are left out until it is wired up.
 jobs:
   gds:
     runs-on: ubuntu-24.04
+    env:
+      OPENLANE2_TAG: 2.2.9
+      PDK_ROOT: /home/runner/pdk
+      PDK: sky130A
     steps:
       - name: checkout repo
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Build GDS
-        uses: TinyTapeout/tt-gds-action@tt10
+      - name: Setup python
+        uses: actions/setup-python@v5
         with:
-          flow: openlane2
+          python-version: '3.11'
 
-  precheck:
-    needs: gds
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Run Tiny Tapeout Precheck
-        uses: TinyTapeout/tt-gds-action/precheck@tt10
+      - name: Install OpenLane
+        shell: bash
+        run: pip install openlane==$OPENLANE2_TAG
 
-  gl_test:
-    needs: gds
-    runs-on: ubuntu-24.04
-    steps:
-      - name: checkout repo
-        uses: actions/checkout@v4
+      # The chip's settings (src/config.json) with the Shader Core's on top, as the
+      # Tiny Tapeout flow merges src/config.json with src/user_config.json
+      - name: Merge config
+        shell: bash
+        run: jq -s '.[0] * .[1]' src/config.json gds/shader_core/config.json > gds/shader_core/config_merged.json
+
+      # --dockerized pulls the OpenLane image and the sky130A PDK
+      - name: Build Shader Core GDS
+        shell: bash
+        run: >
+          python -m openlane --pdk-root "$PDK_ROOT" --docker-no-tty --dockerized
+          --run-tag shader_core --force-run-dir runs/shader_core --hide-progress-bar
+          gds/shader_core/config_merged.json
+
+      - name: Summary
+        shell: bash
+        run: |
+          METRICS=runs/shader_core/final/metrics.json
+          {
+            echo "## Shader Core GDS"
+            echo "| Metric | Value |"
+            echo "| --- | --- |"
+            for key in design__instance__count design__instance__area design__die__area \
+                       timing__setup__ws timing__hold__ws \
+                       route__drc_errors magic__drc_error__count design__lvs_error__count; do
+              echo "| $key | $(jq -r --arg key "$key" '.[$key] // "n/a"' "$METRICS") |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish GDS and logs
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
         with:
-          submodules: recursive
-
-      - name: GL test
-        uses: TinyTapeout/tt-gds-action/gl_test@tt10
-
-  viewer:
-    needs: gds
-    runs-on: ubuntu-24.04
-    permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
-    steps:
-      - uses: TinyTapeout/tt-gds-action/viewer@tt10
+          name: shader_core_gds
+          path: |
+            gds/shader_core/config_merged.json
+            runs/shader_core/*
