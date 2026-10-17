@@ -30,7 +30,7 @@ OTHER_INPUTS = {
 
 # --- HELPERS ---
 def check_idle(dut, when):
-    """With start=0, SC should stay in STATE_IDLE in all situations."""
+    """Checks that state is STATE_IDLE"""
     state = dut.u1.state_r.value
     assert int(state) == STATE_IDLE, f"state_r is {int(state)}, not STATE_IDLE {when}"
 
